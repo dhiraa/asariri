@@ -147,12 +147,16 @@ class ConditionalGAN(tf.estimator.Estimator):
         :return: Tuple of (tensor output of the discriminator, tensor logits of the discriminator)
         """
 
+
+
+        hook = LogShapeHook([images, input_z])
+
+
         with tf.variable_scope('discriminator', reuse=reuse):
             # input_z = tf.layers.dense(input_z, self.gan_config.batch_size * 1 * 1* 740)
             # images = tf.layers.dense(images, self.gan_config.batch_size * 1 * 1 * 740)
 
-            y = tf.reshape(input_z, [self.gan_config.batch_size, 1, 1, 740], name="y_reshape")
-            images = tf.reshape(images, [self.gan_config.batch_size, 32, 32, 1], name="images_reshape")
+            y = tf.reshape(input_z, [-1, 1, 1, 740], name="y_reshape")
 
             x1 = conv_cond_concat(images, y)
 
@@ -189,7 +193,6 @@ class ConditionalGAN(tf.estimator.Estimator):
 
             print_info("======>out: {}".format(out))
 
-            hook = LogShapeHook([images, input_z])
 
             return out, logits, hook
 
@@ -227,7 +230,7 @@ class ConditionalGAN(tf.estimator.Estimator):
                 x = tf.layers.batch_normalization(x, training=is_train)
                 x = tf.maximum(self.gan_config.alpha * x, x)
 
-                print_info("======>out: {}".format(x))
+                print_info("======>x at conv layer {} is {}".format(i, x))
 
             # Output layer
             logits = tf.layers.conv2d_transpose(x, out_channel_dim, 5, strides=1, padding='same')
@@ -236,7 +239,9 @@ class ConditionalGAN(tf.estimator.Estimator):
 
             print_info("======>out: {}".format(out))
 
-            return out
+            hook = LogShapeHook([out])
+
+            return out, hook
 
     def model_loss(self, input_real, input_z, out_channel_dim, global_step):
         """
@@ -247,7 +252,7 @@ class ConditionalGAN(tf.estimator.Estimator):
         :return: A tuple of (discriminator loss, generator loss)
         """
         #     print('Generator for fake images...')
-        g_model = self.generator(input_z, out_channel_dim)
+        g_model, gen_hook = self.generator(input_z, out_channel_dim)
         #     print('Passing discriminator with real images...')
         d_model_real, d_logits_real, hook1 = self.discriminator(input_real, input_z)
         #     print('Passing discriminator with fake images...')
@@ -264,7 +269,7 @@ class ConditionalGAN(tf.estimator.Estimator):
 
         print_hooks = UserLogHook(g_model, d_loss, g_loss, global_step)
 
-        return d_loss, g_loss, [print_hooks, hook1, hook2]
+        return d_loss, g_loss, [print_hooks, hook1, hook2, gen_hook]
 
     def model_opt(self, d_loss, g_loss, learning_rate, beta1, global_step):
         """

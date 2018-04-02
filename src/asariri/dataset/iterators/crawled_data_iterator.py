@@ -46,12 +46,16 @@ class CrawledDataIterator:
 
             batched_data_len = (len(data)//batch_size) * batch_size
 
+            print_info("batched_data_len is {}".format(batched_data_len))
+
             data_new = data[:batched_data_len]
 
             # print_error(data_new)
 
             for i in tqdm(range(len(data_new)), desc=mode):
-                data_dict  =data_new[i]
+                # print("\n")
+                # print_info(i)
+                data_dict  = data_new[i]
                 audio_file_name = data_dict["audio"]
                 image_file_name = data_dict["image"]
                 person_name = data_dict["label"]
@@ -109,7 +113,7 @@ class CrawledDataIterator:
             batch_size=self._batch_size,
             shuffle=True,
             num_epochs=1,
-            queue_capacity=3 * self._batch_size,
+            queue_capacity=2000,
             num_threads=1,
         )
 
@@ -122,7 +126,7 @@ class CrawledDataIterator:
             batch_size=self._batch_size,
             shuffle=True,
             num_epochs=1,
-            queue_capacity=3 * self._batch_size,
+            queue_capacity=2000,
             num_threads=1,
         )
 
@@ -135,7 +139,7 @@ class CrawledDataIterator:
             batch_size=1,
             shuffle=False,
             num_epochs=1,
-            queue_capacity=3 * self._batch_size,
+            queue_capacity=2000,
             num_threads=1,
         )
 

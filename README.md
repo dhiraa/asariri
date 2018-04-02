@@ -178,6 +178,9 @@ asariri/
             models/                 #Tensorflow model chaeckpoints
                 mnistdataiterator/  #Data iterator used
                     vanilla_gan/    #Model used
+
+tensorboard --logdir=experiments/asariri/models/mnistdataiterator/vanilla_gan/
+
         
 #Running below command will generate 10 samples in a Matplot UI
 python src/asariri/commands/run_experiments.py \

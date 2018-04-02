@@ -1,4 +1,5 @@
 import os
+from random import shuffle
 
 
 class IDataset:
@@ -12,7 +13,7 @@ class IDataset:
 
 
         self.num_channels = -1
-        self.image_size = 28
+        self.image_size = -1
         self._train_files = []
         self._val_files = []
         self._test_files = []
@@ -35,9 +36,11 @@ class IDataset:
         raise NotImplementedError
 
     def get_train_files(self):
+        shuffle(self._train_files)
         return self._train_files
 
     def get_val_files(self):
+        shuffle(self._val_files)
         return self._val_files
 
     def get_test_files(self):

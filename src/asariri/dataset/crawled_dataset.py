@@ -84,14 +84,6 @@ class CrawledData(IDataset):
 
         self._train_files, self._val_files, _, _ = train_test_split(all_files, all_files, test_size=0.1, random_state=42)
 
-    def get_train_files(self):
-        shuffle(self._train_files)
-        return self._train_files
-
-    def get_val_files(self):
-        shuffle(self._val_files)
-        return self._val_files
-
     def get_test_files(self):
         if self.is_live:
             test_dir = "/tmp/test_asariri/"
