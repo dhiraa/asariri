@@ -75,7 +75,7 @@ class CrawledDataIterator:
                         image_data =  image_data/ IMAGE_MAX_VALUE - 0.5
                         image_data =  image_data *2
 
-                        if len(image_data.shape) == 2:
+                        if len(image_data.shape) == 2:  # if the image size 2 it syas it is BW 2Dim change it to 3Dim
                             image_data = np.expand_dims(image_data, axis=2)
                     else:
                         image_data = np.array("none")

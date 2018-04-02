@@ -9,12 +9,14 @@ class DataIteratorFactory():
 
     iterator_path = {
         "crawled_data_iterator": "asariri.dataset.iterators.crawled_data_iterator",
-        "mnist_iterator" : "asariri.dataset.iterators.mnist_iterator"
+        "mnist_iterator" : "asariri.dataset.iterators.mnist_iterator",
+        "cifar10_iterator": "asariri.dataset.iterators.cifar10_iterator"
     }
 
     iterators = {
         "crawled_data_iterator": "CrawledDataIterator",
-        "mnist_iterator": "MnistDataIterator"
+        "mnist_iterator": "MnistDataIterator",
+        "cifar10_iterator": "Cifar10DataIterator"
     }
 
 

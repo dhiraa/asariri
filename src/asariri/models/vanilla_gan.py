@@ -341,20 +341,20 @@ class VanillaGAN(tf.estimator.Estimator):
 """
 CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
 --mode=train \
---dataset-name=mnist_dataset \
---data-iterator-name=mnist_iterator \
+--dataset-name=cifar10_dataset \
+--data-iterator-name=cifar10_iterator \
 --model-name=vanilla_gan \
---image-folde=minist_bw_28x28 \
---batch-size=32 \
+--image-folde=cifar10_c_32x32 \
+--batch-size=8 \
 --num-epochs=2
 
 python src/asariri/commands/run_experiments.py \
 --mode=predict \
---dataset-name=mnist_dataset \
---data-iterator-name=mnist_iterator \
+--dataset-name=cifar10_dataset \
+--data-iterator-name=cifar10_iterator \
 --model-name=vanilla_gan \
---image-folde=minist_bw_28x28 \
---batch-size=32 \
+--image-folde=cifar10_c_32x32 \
+--batch-size=8 \
 --num-epochs=2 \
 --model-dir=experiments/asariri/models/mnistdataiterator/vanilla_gan/  \
 --is-live=False

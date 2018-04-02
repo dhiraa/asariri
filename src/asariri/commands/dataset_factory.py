@@ -8,11 +8,13 @@ class DatasetFactory():
     dataset_path = {
         "crawled_dataset": "asariri.dataset.crawled_dataset",
         "mnist_dataset": "asariri.dataset.mnist_dataset",
+        "cifar10_dataset": "asariri.dataset.cifar10_dataset",
     }
 
     datasets = {
         "crawled_dataset": "CrawledData",
         "mnist_dataset": "Mnist",
+        "cifar10_dataset": "Cifar10"
     }
 
     def __init__(self):
