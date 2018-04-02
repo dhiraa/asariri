@@ -162,6 +162,6 @@ Audio File ---> Librosa ---> MFCC ---> 3920 freq samples
 
 
 # Team
-- Gaurish <>
+- Gaurish Thakkar<thak123@gmail.com>
 - Anil Kumar <>
 - Mageswaran Dhandapani <mageswaran1989@gmail.com>
