@@ -1,4 +1,5 @@
-# Asariri
+
+![](asariri.png)
 
 ## About 
 [Check the presentation here!](Asariri.pptx.pdf)
@@ -81,10 +82,14 @@ characters, positional information of words etc.,
 
 ![](docs/images/tf_estimators.png)
  
+Note: 
+- At first it may look daunting and unnesarry use of Classes in a scrioting language
+- Do spend some time to get used the architecture for ease of experimenting
+
 
 ## Git Clone
 ```commandline
-git clone --recurse-submodules -j8 https://github.com/dhiraa/asariri
+git clone --recurse-submodules --jobs 8 https://github.com/dhiraa/asariri
 
 #or if you wanted to pull after cloning
 
@@ -105,6 +110,9 @@ env or to any existing environment
     
     
 ## Dataset
+
+- CIFAR 10 50K 32x32 images + Noise
+- Crawled Dataset : Manually prepated for this repo with TED talks + (Noise + Audio MFCC)
 
 ```bash
 /path/to/asariri/data/
@@ -153,15 +161,18 @@ cd /path/to/asariri/
 ```
 
 # Misc Details to remember
+- Based on the image folder name, the number of color channels are determined in teh dataset class
+- Which is then passed to model through data iterator, this info is then used in Generator and Discriminator
+- Audio File ---> Librosa ---> MFCC ---> 3920 freq samples
 
-Audio File ---> Librosa ---> MFCC ---> 3920 freq samples
 
 # References:
 - https://github.com/adeshpande3/Generative-Adversarial-Networks/blob/master/Generative%20Adversarial%20Networks%20Tutorial.ipynb
+- https://github.com/Mageswaran1989/deep-learning/blob/project_5/face_generation/
 - https://www.tensorflow.org/api_docs/python/tf/contrib/gan/estimator/GANEstimator
-
+- http://www.vogella.com/tutorials/GitSubmodules/article.html
 
 # Team
 - Gaurish <>
 - Anil Kumar <>
-- Mageswaran Dhandapani <mageswaran1989@gmail.com>
+- Mageswaran Dhandapani <mageswaran1989@gmail.com/mageswaran.dhandapani@imaginea.com>
