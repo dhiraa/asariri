@@ -173,6 +173,6 @@ cd /path/to/asariri/
 - http://www.vogella.com/tutorials/GitSubmodules/article.html
 
 # Team
-- Gaurish <>
+- Gaurish Thakkar<thak123@gmail.com>
 - Anil Kumar <>
 - Mageswaran Dhandapani <mageswaran1989@gmail.com/mageswaran.dhandapani@imaginea.com>
