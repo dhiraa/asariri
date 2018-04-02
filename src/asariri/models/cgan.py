@@ -1,70 +1,40 @@
 """
-Paper   : https://arxiv.org/abs/1411.1784
-Git     : https://github.com/hwalsuklee/tensorflow-generative-model-collections/blob/master/CGAN.py
-        : https://github.com/carpedm20/DCGAN-tensorflow
+Reference: 
+    - https://github.com/Mageswaran1989/deep-learning/blob/project_5/face_generation/
 """
 
-import collections
-
-from PIL import Image
+from asariri.dataset.features.asariri_features import GANFeature
+from asariri.config.model_config import *
+from asariri.helpers.print_helper import *
 from tensorflow.contrib.learn import ModeKeys
 from tensorflow.python.training import session_run_hook
+import collections
 from tensorflow.python.training import training_util
-
-from asariri.dataset.features.asariri_features import GANFeature
-from asariri.models.utils.ops import *
-# from nlp.text_classification.tc_utils.tc_config import ModelConfigBase
-from asariri.helpers.print_helper import *
-from asariri.utils.asariri_config import ModelConfigBase
+from asariri.utils.images.image import *
+import math
 
 
-class CGANConfig(ModelConfigBase):
-    def __init__(self, model_dir, batch_size):
+class ConditionalGANConfig(ModelConfigBase):
+    def __init__(self, model_dir, batch_size, num_image_channels, image_size):
         self._model_dir = model_dir
 
+        self.num_image_channels = num_image_channels
+        self.image_size = image_size
+
+        self.gen_filter_size = 512
         self.learning_rate = 0.001
         self.alpha = 0.15
         self.beta1 = 0.4
         self.z_dim = 30
-        
-        self.batch_size = batch_size
 
     @staticmethod
-    def user_config(batch_size):
-        _model_dir = "experiments/asariri/minist_iterator/models/VanillaGAN/"
-        config = CGANConfig(_model_dir, batch_size)
-        CGANConfig.dump(_model_dir, config)
+    def user_config(batch_size, data_iterator):
+        _model_dir = EXPERIMENT_MODEL_ROOT_DIR + "/" + data_iterator.name + "/cgan/"
+        config = ConditionalGANConfig(_model_dir, batch_size,
+                                  data_iterator.get_image_channels(),
+                                  data_iterator.get_image_size())
+        ConditionalGANConfig.dump(_model_dir, config)
         return config
-
-
-def images_square_grid(images, mode):
-    """
-    Save images as a square grid
-    :param images: Images to be used for the grid
-    :param mode: The mode to use for images
-    :return: Image of images in a square grid
-    """
-    # Get maximum size for square grid of images
-    save_size = math.floor(np.sqrt(images.shape[0]))
-
-    # Scale to 0-255
-    images = (((images - images.min()) * 255) / (images.max() - images.min())).astype(np.uint8)
-
-    # Put images in a square arrangement
-    images_in_square = np.reshape(
-        images[:save_size * save_size],
-        (save_size, save_size, images.shape[1], images.shape[2], images.shape[3]))
-    if mode == 'L':
-        images_in_square = np.squeeze(images_in_square, 4)
-
-    # Combine images to grid image
-    new_im = Image.new(mode, (images.shape[1] * save_size, images.shape[2] * save_size))
-    for col_i, col_images in enumerate(images_in_square):
-        for image_i, image in enumerate(col_images):
-            im = Image.fromarray(image, mode)
-            new_im.paste(im, (col_i * images.shape[1], image_i * images.shape[2]))
-
-    return new_im
 
 
 class RunTrainOpsHook(session_run_hook.SessionRunHook):
@@ -91,7 +61,7 @@ class UserLogHook(session_run_hook.SessionRunHook):
 
         print_info("global_step {}".format(global_step))
 
-        if global_step % 2 == 0:
+        if global_step % 2 == 0 or global_step % 3 == 0:
             samples = run_context.session.run(self._z_image)
             channel = self._z_image.get_shape()[-1]
             if channel == 1:
@@ -99,7 +69,11 @@ class UserLogHook(session_run_hook.SessionRunHook):
             else:
                 images_grid = images_square_grid(samples, "RGB")
 
-            images_grid.save('/tmp/asariri_{}.png'.format(global_step))
+            if not os.path.exists(EXPERIMENT_DATA_ROOT_DIR + '/cgan/'): os.makedirs(
+                EXPERIMENT_DATA_ROOT_DIR + '/cgan/')
+
+            images_grid.save(EXPERIMENT_DATA_ROOT_DIR + '/cgan/' + '/asariri_{}.png'.format(global_step))
+
         if global_step % 2 == 0:
             dloss, gloss = run_context.session.run([self._d_loss, self._g_loss])
             print_info("\nDiscriminator Loss: {:.4f}... Generator Loss: {:.4f}".format(dloss, gloss))
@@ -119,10 +93,10 @@ class GANTrainSteps(
     """
 
 
-class CGAN(tf.estimator.Estimator):
+class ConditionalGAN(tf.estimator.Estimator):
     def __init__(self,
                  gan_config, run_config):
-        super(CGAN, self).__init__(
+        super(ConditionalGAN, self).__init__(
             model_fn=self._model_fn,
             model_dir=gan_config._model_dir,
             config=run_config)
@@ -131,45 +105,175 @@ class CGAN(tf.estimator.Estimator):
 
         self._feature_type = GANFeature
 
-    def discriminator(self, x, y, is_training=True, reuse=False):
-        # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
-        # Architecture : (64)4c2s-(128)4c2s_BL-FC1024_BL-FC1_S
-        with tf.variable_scope("discriminator", reuse=reuse):
-            # merge image and label
-            y = tf.reshape(y, [self.gan_config.batch_size, 1, 1, self.y_dim])
-            x = conv_cond_concat(x, y)
+    def get_sequential_train_hooks(self, generator_train_op,
+                                   discriminator_train_op,
+                                   train_steps=GANTrainSteps(1, 1)):
+        """Returns a hooks function for sequential GAN training.
 
-            net = lrelu(conv2d(x, 64, 4, 4, 2, 2, name='d_conv1'))
-            net = lrelu(bn(conv2d(net, 128, 4, 4, 2, 2, name='d_conv2'),
-                           is_training=is_training, scope='d_bn2'))
-            net = tf.reshape(net, [self.gan_config.batch_size, -1])
-            net = lrelu(bn(linear(net, 1024, scope='d_fc3'),
-                           is_training=is_training, scope='d_bn3'))
-            out_logit = linear(net, 1, scope='d_fc4')
-            out = tf.nn.sigmoid(out_logit)
+        Args:
+          train_steps: A `GANTrainSteps` tuple that determines how many generator
+            and discriminator training steps to take.
 
-            return out, out_logit, net
+        Returns:
+          A function that takes a GANTrainOps tuple and returns a list of hooks.
+        """
+        # print_info(generator_train_op)
+        # print_info(discriminator_train_op)
 
-    def generator(self, z, y, is_training=True, reuse=False):
-        # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
-        # Architecture : FC1024_BR-FC7x7x128_BR-(64)4dc2s_BR-(1)4dc2s_S
-        with tf.variable_scope("generator", reuse=reuse):
-            # merge noise and label
-            z = concat([z, y], 1)
+        generator_hook = RunTrainOpsHook(generator_train_op,
+                                         train_steps.generator_train_steps)
+        discriminator_hook = RunTrainOpsHook(discriminator_train_op,
+                                             train_steps.discriminator_train_steps)
+        return [discriminator_hook, generator_hook]
 
-            net = tf.nn.relu(bn(linear(z, 1024, scope='g_fc1'),
-                                is_training=is_training, scope='g_bn1'))
-            net = tf.nn.relu(bn(linear(net, 128 * 7 * 7, scope='g_fc2'),
-                                is_training=is_training, scope='g_bn2'))
-            net = tf.reshape(net, [self.gan_config.batch_size, 7, 7, 128])
-            net = tf.nn.relu(
-                bn(deconv2d(net, [self.gan_config.batch_size, 14, 14, 64], 4, 4, 2, 2, name='g_dc3'),
-                   is_training=is_training,
-                   scope='g_bn3'))
+    def discriminator(self, images, input_z, reuse=False):
+        """
+        Create the discriminator network
+        :param image: Tensor of input image(s)
+        :param reuse: Boolean if the weights should be reused
+        :return: Tuple of (tensor output of the discriminator, tensor logits of the discriminator)
+        """
 
-            out = tf.nn.sigmoid(deconv2d(net, [self.gan_config.batch_size, 28, 28, 1], 4, 4, 2, 2, name='g_dc4'))
+        with tf.variable_scope('discriminator', reuse=reuse):
+            # Input layer consider ?x32x32x3
+            x1 = tf.layers.conv2d(images, 64, 5, strides=2, padding='same',
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.02))
+            relu1 = tf.maximum(0.02 * x1, x1)
+            relu1 = tf.layers.dropout(relu1, rate=0.5)
+            # 16x16x64
+            #         print(x1)
+            x2 = tf.layers.conv2d(relu1, 128, 5, strides=2, padding='same',
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.02))
+            bn2 = tf.layers.batch_normalization(x2, training=True)
+            relu2 = tf.maximum(0.02 * bn2, bn2)
+            relu2 = tf.layers.dropout(relu2, rate=0.5)
+            # 8x8x128
+            #         print(x2)
+            x3 = tf.layers.conv2d(relu2, 256, 5, strides=2, padding='same',
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.02))
+            bn3 = tf.layers.batch_normalization(x3, training=True)
+            relu3 = tf.maximum(0.02 * bn3, bn3)
+            relu3 = tf.layers.dropout(relu3, rate=0.5)
+            # 4x4x256
+            #         print(x3)
+            # Flatten it
+            flat = tf.reshape(relu3, (-1, 4 * 4 * 256))
 
-        return out
+            conditioned_fully_connected_layer = tf.concat([flat, input_z], axis=0)
+
+            logits = tf.layers.dense(conditioned_fully_connected_layer, 1)
+            #         print(logits)
+            out = tf.sigmoid(logits)
+            #         print('discriminator out: ', out)
+
+            print_info("======>out: {}".format(out))
+
+            return out, logits
+
+    def generator(self, z, out_channel_dim, is_train=True):
+        """
+        Create the generator network
+        :param z: Input z on dimension Z
+        :param out_channel_dim: The number of channels in the output image
+        :param is_train: Boolean if generator is being used for training
+        :return: The tensor output of the generator
+        """
+
+        with tf.variable_scope('generator', reuse=not is_train):
+            gen_filter_size = self.gan_config.gen_filter_size
+
+            # First fully connected layer
+            x = tf.layers.dense(z, 8 * 8 * gen_filter_size)
+            # Reshape it to start the convolutional stack
+            x = tf.reshape(x, (-1, 8, 8, gen_filter_size))
+            x = tf.maximum(self.gan_config.alpha * x, x)
+
+            x = tf.layers.conv2d_transpose(x, gen_filter_size // 2, 5, strides=1, padding='same')
+            x = tf.layers.batch_normalization(x, training=is_train)
+            x = tf.maximum(self.gan_config.alpha * x, x)
+
+            gen_filter_size = gen_filter_size // 4
+            # 32 //  8 = srt(4)  => 2 => (8) -> 16 -> 32
+            # 64 //  8 = srt(8)  => 3 => (8) -> 16 -> 32 -> 64
+            # 128 // 8 = srt(16) => 4 => (8) -> 16 -> 32 -> 64 -> 128
+
+            # Based on image size adds Conv layer with appropriate filter size
+            for i in range(int(math.sqrt(self.gan_config.image_size // 8))):
+                gen_filter_size = gen_filter_size // 2
+                x = tf.layers.conv2d_transpose(x, gen_filter_size, 5, strides=2, padding='same')
+                x = tf.layers.batch_normalization(x, training=is_train)
+                x = tf.maximum(self.gan_config.alpha * x, x)
+
+                print_info("======>out: {}".format(x))
+
+            # Output layer
+            logits = tf.layers.conv2d_transpose(x, out_channel_dim, 5, strides=1, padding='same')
+            # HxWxNUM_CHANNELS now
+            out = tf.tanh(logits)
+
+            print_info("======>out: {}".format(out))
+
+            return out
+
+    def model_loss(self, input_real, input_z, out_channel_dim, global_step):
+        """
+        Get the loss for the discriminator and generator
+        :param input_real: Images from the real dataset
+        :param input_z: Z input
+        :param out_channel_dim: The number of channels in the output image
+        :return: A tuple of (discriminator loss, generator loss)
+        """
+        #     print('Generator for fake images...')
+        g_model = self.generator(input_z, out_channel_dim)
+        #     print('Passing discriminator with real images...')
+        d_model_real, d_logits_real = self.discriminator(input_real, input_z)
+        #     print('Passing discriminator with fake images...')
+        d_model_fake, d_logits_fake = self.discriminator(g_model, input_z, reuse=True)
+
+        d_loss_real = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=d_logits_real, labels=tf.ones_like(d_model_real)))
+        d_loss_fake = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=d_logits_fake, labels=tf.zeros_like(d_model_fake)))
+        g_loss = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=d_logits_fake, labels=tf.ones_like(d_model_fake)))
+
+        d_loss = d_loss_real + d_loss_fake
+
+        print_hooks = UserLogHook(g_model, d_loss, g_loss, global_step)
+
+        return d_loss, g_loss, print_hooks
+
+    def model_opt(self, d_loss, g_loss, learning_rate, beta1, global_step):
+        """
+        Get optimization operations
+        :param d_loss: Discriminator loss Tensor
+        :param g_loss: Generator loss Tensor
+        :param learning_rate: Learning Rate Placeholder
+        :param beta1: The exponential decay rate for the 1st moment in the optimizer
+        :return: A tuple of (discriminator training operation, generator training operation)
+        """
+
+        # Get weights and bias to update
+        t_vars = tf.trainable_variables()
+        d_vars = [var for var in t_vars if var.name.startswith('discriminator')]
+        g_vars = [var for var in t_vars if var.name.startswith('generator')]
+
+        # Optimize
+        d_train_opt = tf.train.AdamOptimizer(learning_rate, beta1=beta1, name="d_train_opt"). \
+            minimize(d_loss, var_list=d_vars, global_step=global_step)
+
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
+        g_updates = [opt for opt in update_ops if opt.name.startswith('generator')]
+
+        with tf.control_dependencies(g_updates):
+            g_train_opt = tf.train.AdamOptimizer(learning_rate, beta1=beta1, name="g_train_opt"). \
+                minimize(g_loss, var_list=g_vars, global_step=global_step)
+
+        # tf.logging.info("=========> {}".format(d_train_opt))
+        # tf.logging.info("=========> {}".format(g_train_opt))
+
+        return d_train_opt, g_train_opt
 
     def _model_fn(self, features, labels, mode, params):
         """
@@ -196,6 +300,7 @@ class CGAN(tf.estimator.Estimator):
         tf.logging.info("=========> {}".format(z_placeholder))
 
         if mode != ModeKeys.INFER:
+
             x_placeholder = features[self._feature_type.IMAGE]  # Placeholder for input image vectors to the generator
             tf.logging.info("=========> {}".format(x_placeholder))
 
@@ -209,6 +314,9 @@ class CGAN(tf.estimator.Estimator):
                                                       self.gan_config.learning_rate,
                                                       self.gan_config.beta1,
                                                       self.global_step)
+        else:
+            sample_image = self.generator(z_placeholder, self.gan_config.num_image_channels)
+            # changes are made to take image channels from data iterator just for prediction
 
         # Loss, training and eval operations are not needed during inference.
         loss = None
@@ -234,58 +342,49 @@ class CGAN(tf.estimator.Estimator):
 
 
 """
-CUDA_VISIBLE_DEVICES=0 python asariri/commands/run_experiments.py \
+CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
 --mode=train \
 --dataset-name=mnist_dataset \
 --data-iterator-name=mnist_iterator \
---model-name=vanilla_gan \
+--model-name=cgan \
+--image-folde=minist_bw_28x28 \
 --batch-size=32 \
 --num-epochs=2
 
-python asariri/commands/run_experiments.py \
+python src/asariri/commands/run_experiments.py \
 --mode=predict \
 --dataset-name=mnist_dataset \
 --data-iterator-name=mnist_iterator \
---model-name=vanilla_gan \
+--model-name=cgan \
+--image-folde=minist_bw_28x28 \
 --batch-size=32 \
 --num-epochs=2 \
---model-dir=experiments/asariri/models/VanillaGAN/
+--model-dir=experiments/asariri/models/mnistdataiterator/cgan/  \
+--is-live=False
 """
 
 """
-CUDA_VISIBLE_DEVICES=0 python asariri/commands/run_experiments.py \
+CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
 --mode=train \
 --dataset-name=crawled_dataset \
 --data-iterator-name=crawled_data_iterator \
---model-name=vanilla_gan \
---batch-size=32 \
---num-epochs=2
-
-python asariri/commands/run_experiments.py \
---mode=predict \
---dataset-name=crawled_dataset \
---data-iterator-name=crawled_data_iterator \
---model-name=vanilla_gan \
---batch-size=32 \
---num-epochs=2 \
---model-dir=experiments/asariri/models/VanillaGAN/
-"""
-
-"""
-CUDA_VISIBLE_DEVICES=0 python asariri/commands/run_experiments.py \
---mode=train \
---dataset-name=crawled_dataset_v1 \
---data-iterator-name=crawled_data_iterator \
---model-name=vanilla_gan \
+--image-folde=Images_bw_32x32 \
+--model-name=cgan \
 --batch-size=32 \
 --num-epochs=100
 
-python asariri/commands/run_experiments.py \
+
+
+CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
 --mode=predict \
---dataset-name=crawled_dataset_v1 \
+--dataset-name=crawled_dataset \
 --data-iterator-name=crawled_data_iterator \
---model-name=vanilla_gan \
+--model-name=cgan \
+--image-folde=Images_bw_32x32 \
 --batch-size=32 \
 --num-epochs=2 \
---model-dir=experiments/asariri/models/VanillaGAN/
+--model-dir=experiments/asariri/models/crawleddataiterator/cgan/ \
+--is-live=False
 """
+
+

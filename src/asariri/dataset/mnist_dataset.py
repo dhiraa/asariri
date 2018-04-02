@@ -4,7 +4,9 @@ from asariri.dataset.dataset_interface import IDataset
 from asariri.helpers.downloaders import *
 from asariri.helpers.print_helper import *
 import matplotlib.pyplot as plt
+from asariri.utils.deprecated import *
 
+@deprecated("28x28 image size is no more supported, since the models are made more generic to handel images in multiple of 8")
 class Mnist(IDataset):
     """
     Downloads, mnist data set and creates three buckets based of hash of filenames

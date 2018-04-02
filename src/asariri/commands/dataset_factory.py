@@ -7,13 +7,11 @@ class DatasetFactory():
 
     dataset_path = {
         "crawled_dataset": "asariri.dataset.crawled_dataset",
-        "crawled_dataset_v1": "asariri.dataset.crawled_dataset_v1",
         "mnist_dataset": "asariri.dataset.mnist_dataset",
     }
 
     datasets = {
         "crawled_dataset": "CrawledData",
-        "crawled_dataset_v1": "CrawledData",
         "mnist_dataset": "Mnist",
     }
 

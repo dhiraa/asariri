@@ -14,7 +14,10 @@ from asariri.utils.audio.recording import record_audio
 
 
 class CrawledData(IDataset):
-    def __init__(self, audio_folder, image_folder, is_live):
+    def __init__(self,
+                 audio_folder,
+                 image_folder,
+                 is_live):
         IDataset.__init__(self, audio_folder, image_folder, is_live)
 
         if "_bw_" in image_folder:

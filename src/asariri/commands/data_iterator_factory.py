@@ -23,8 +23,6 @@ class DataIteratorFactory():
 
     @staticmethod
     def _get_iterator(name):
-        '''
-        '''
         try:
             data_iterator = getattr(import_module(DataIteratorFactory.iterator_path[name]), DataIteratorFactory.iterators[name])
         except KeyError:

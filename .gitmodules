@@ -1,4 +1,4 @@
 [submodule "data/asariri"]
-        path = data/asariri
-        url = https://github.com/thak123/asariri
-
+	path = data/asariri
+	url = https://github.com/thak123/asariri
+	branch = master

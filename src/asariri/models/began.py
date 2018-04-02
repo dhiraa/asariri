@@ -6,25 +6,14 @@ Git:
     - https://github.com/carpedm20/BEGAN-tensorflow
 """
 
-
-import numpy as np
-import tensorflow as tf
-import math
-from PIL import Image
-from tensorflow.contrib import layers
-from tensorflow.contrib import signal
-from tqdm import tqdm
-
 from asariri.dataset.features.asariri_features import GANFeature
-from asariri.utils.asariri_config import *
+from asariri.config.model_config import *
 from asariri.helpers.print_helper import *
 from tensorflow.contrib.learn import ModeKeys
 from tensorflow.python.training import session_run_hook
 import collections
 from tensorflow.python.training import training_util
-from matplotlib import pyplot
 
-from asariri.models.utils.ops import *
 from asariri.models.utils.utils import *
 from asariri.utils.images.image import *
 

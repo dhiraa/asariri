@@ -3,22 +3,13 @@ Reference:
     - https://github.com/Mageswaran1989/deep-learning/blob/project_5/face_generation/
 """
 
-import numpy as np
-import tensorflow as tf
-import math
-from PIL import Image
-from tensorflow.contrib import layers
-from tensorflow.contrib import signal
-from tqdm import tqdm
-
 from asariri.dataset.features.asariri_features import GANFeature
-from asariri.utils.asariri_config import *
+from asariri.config.model_config import *
 from asariri.helpers.print_helper import *
 from tensorflow.contrib.learn import ModeKeys
 from tensorflow.python.training import session_run_hook
 import collections
 from tensorflow.python.training import training_util
-from matplotlib import pyplot
 from asariri.utils.images.image import *
 import math
 
@@ -29,6 +20,7 @@ class VanillaGANConfig(ModelConfigBase):
         self.num_image_channels = num_image_channels
         self.image_size = image_size
 
+        self.gen_filter_size = 512
         self.learning_rate = 0.001
         self.alpha = 0.15
         self.beta1 = 0.4
@@ -142,19 +134,19 @@ class VanillaGAN(tf.estimator.Estimator):
         """
 
         with tf.variable_scope('discriminator', reuse=reuse):
-            # Input layer is ?x28x28x3
+            # Input layer consider ?x32x32x3
             x1 = tf.layers.conv2d(images, 64, 5, strides=2, padding='same',
                                   kernel_initializer=tf.random_normal_initializer(stddev=0.02))
             relu1 = tf.maximum(0.02 * x1, x1)
             relu1 = tf.layers.dropout(relu1, rate=0.5)
-            # 14x14x64
+            # 16x16x64
             #         print(x1)
             x2 = tf.layers.conv2d(relu1, 128, 5, strides=2, padding='same',
                                   kernel_initializer=tf.random_normal_initializer(stddev=0.02))
             bn2 = tf.layers.batch_normalization(x2, training=True)
             relu2 = tf.maximum(0.02 * bn2, bn2)
             relu2 = tf.layers.dropout(relu2, rate=0.5)
-            # 7x7x128
+            # 8x8x128
             #         print(x2)
             x3 = tf.layers.conv2d(relu2, 256, 5, strides=2, padding='same',
                                   kernel_initializer=tf.random_normal_initializer(stddev=0.02))
@@ -177,33 +169,34 @@ class VanillaGAN(tf.estimator.Estimator):
     def generator(self, z, out_channel_dim, is_train=True):
         """
         Create the generator network
-        :param z: Input z
+        :param z: Input z on dimension Z
         :param out_channel_dim: The number of channels in the output image
         :param is_train: Boolean if generator is being used for training
         :return: The tensor output of the generator
         """
 
         with tf.variable_scope('generator', reuse=not is_train):
-            filter_size = 512
-
+            gen_filter_size = self.gan_config.gen_filter_size
+            
             # First fully connected layer
-            x = tf.layers.dense(z, 8 * 8 * filter_size)
+            x = tf.layers.dense(z, 8 * 8 * gen_filter_size)
             # Reshape it to start the convolutional stack
-            x = tf.reshape(x, (-1, 8, 8, filter_size))
+            x = tf.reshape(x, (-1, 8, 8, gen_filter_size))
             x = tf.maximum(self.gan_config.alpha * x, x)
 
-            x = tf.layers.conv2d_transpose(x, filter_size//2, 5, strides=1, padding='same')
+            x = tf.layers.conv2d_transpose(x, gen_filter_size//2, 5, strides=1, padding='same')
             x = tf.layers.batch_normalization(x, training=is_train)
             x = tf.maximum(self.gan_config.alpha * x, x)
 
-            filter_size = filter_size // 4
+            gen_filter_size = gen_filter_size // 4
             # 32 //  8 = srt(4)  => 2 => (8) -> 16 -> 32
             # 64 //  8 = srt(8)  => 3 => (8) -> 16 -> 32 -> 64
             # 128 // 8 = srt(16) => 4 => (8) -> 16 -> 32 -> 64 -> 128
 
+            # Based on image size adds Conv layer with appropriate filter size
             for i in range(int(math.sqrt(self.gan_config.image_size // 8))):
-                filter_size = filter_size // 2
-                x = tf.layers.conv2d_transpose(x, filter_size, 5, strides=2, padding='same')
+                gen_filter_size = gen_filter_size // 2
+                x = tf.layers.conv2d_transpose(x, gen_filter_size, 5, strides=2, padding='same')
                 x = tf.layers.batch_normalization(x, training=is_train)
                 x = tf.maximum(self.gan_config.alpha * x, x)
 
@@ -211,8 +204,7 @@ class VanillaGAN(tf.estimator.Estimator):
 
             # Output layer
             logits = tf.layers.conv2d_transpose(x, out_channel_dim, 5, strides=1, padding='same')
-            # 28x28x3 now
-            #         print(logits)3
+            # HxWxNUM_CHANNELS now
             out = tf.tanh(logits)
 
             print_info("======>out: {}".format(out))
@@ -392,30 +384,5 @@ CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
 --model-dir=experiments/asariri/models/crawleddataiterator/vanilla_gan/ \
 --is-live=False
 """
-
-
-# """
-# #color and black and white uses same data iterator
-# rm -rf experiments/asariri/models/crawleddataiterator/VanillaGAN/
-#
-# CUDA_VISIBLE_DEVICES=0 python asariri/commands/run_experiments.py \
-# --mode=train \
-# --dataset-name=crawled_dataset_v1 \
-# --data-iterator-name=crawled_data_iterator \
-# --model-name=vanilla_gan \
-# --batch-size=32 \
-# --num-epochs=100
-#
-# python asariri/commands/run_experiments.py \
-# --mode=predict \
-# --dataset-name=crawled_dataset_v1 \
-# --data-iterator-name=crawled_data_iterator \
-# --model-name=vanilla_gan \
-# --batch-size=32 \
-# --num-epochs=2 \
-# --model-dir=experiments/asariri/models/mnistdataiterator/vanilla_gan/  \
-# --is-live=False
-# """
-
 
 

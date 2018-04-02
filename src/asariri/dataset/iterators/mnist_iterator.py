@@ -7,8 +7,9 @@ import librosa
 from PIL import Image
 from asariri.dataset.features.asariri_features import GANFeature
 from asariri.dataset.crawled_dataset import CrawledData
+from asariri.utils.deprecated import *
 
-
+@deprecated("28x28 image size is no more supported, since the models are made more generic to handel images in multiple of 8")
 class MnistDataIterator:
     """
 

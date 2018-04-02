@@ -6,23 +6,23 @@ from importlib import import_module
 class ModelsFactory():
 
     model_path = {
-       "basic_model" : "asariri.models.basic_model",
         "vanilla_gan" : "asariri.models.vanilla_gan",
         "began": "asariri.models.began",
+        "cgan": "asariri.models.cgan",
 
     }
 
     model_configurations = {
-        "basic_model": "BasicModelConfig",
         "vanilla_gan" : "VanillaGANConfig",
-        "began": "BEGANConfig"
+        "began": "BEGANConfig",
+        "cgan": "ConditionalGANConfig",
     }
 
 
     models = {
-        "basic_model" : "BasicModel",
         "vanilla_gan" :  "VanillaGAN",
-        "began" : "BEGAN"
+        "began" : "BEGAN",
+        "cgan": "ConditionalGAN"
     }
 
 
