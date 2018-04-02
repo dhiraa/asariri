@@ -11,6 +11,7 @@ from tensorflow.python.training import session_run_hook
 import collections
 from tensorflow.python.training import training_util
 from asariri.utils.images.image import *
+from asariri.models.utils.ops import *
 import math
 
 
@@ -20,6 +21,8 @@ class ConditionalGANConfig(ModelConfigBase):
 
         self.num_image_channels = num_image_channels
         self.image_size = image_size
+
+        self.batch_size = batch_size
 
         self.gen_filter_size = 512
         self.learning_rate = 0.001
@@ -48,6 +51,16 @@ class RunTrainOpsHook(session_run_hook.SessionRunHook):
         for _ in range(self._train_steps):
             run_context.session.run(self._train_op)
 
+class LogShapeHook(session_run_hook.SessionRunHook):
+    """A hook to run train ops a fixed number of times."""
+
+    def __init__(self, tensors):
+        self._tensors = tensors
+
+    def before_run(self, run_context):
+        for tensor in self._tensors:
+            print_error(tensor)
+            print_error(tensor.get_shape())
 
 class UserLogHook(session_run_hook.SessionRunHook):
     def __init__(self, z_image, d_loss, g_loss, global_Step):
@@ -135,40 +148,48 @@ class ConditionalGAN(tf.estimator.Estimator):
         """
 
         with tf.variable_scope('discriminator', reuse=reuse):
+            print_error(input_z.get_shape())
+
+            y = tf.reshape(input_z, [self.gan_config.batch_size, 1, 1, 740])
+            images = tf.reshape(images, [self.gan_config.batch_size, 32, 32, 1])
+            x1 = conv_cond_concat(images, y)
+
             # Input layer consider ?x32x32x3
-            x1 = tf.layers.conv2d(images, 64, 5, strides=2, padding='same',
-                                  kernel_initializer=tf.random_normal_initializer(stddev=0.02))
-            relu1 = tf.maximum(0.02 * x1, x1)
+            x1 = tf.layers.conv2d(x1, 64, 5, strides=2, padding='same',
+                                  kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
+            relu1 = tf.maximum(0.2 * x1, x1)
             relu1 = tf.layers.dropout(relu1, rate=0.5)
             # 16x16x64
             #         print(x1)
             x2 = tf.layers.conv2d(relu1, 128, 5, strides=2, padding='same',
-                                  kernel_initializer=tf.random_normal_initializer(stddev=0.02))
+                                  kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
             bn2 = tf.layers.batch_normalization(x2, training=True)
-            relu2 = tf.maximum(0.02 * bn2, bn2)
+            relu2 = tf.maximum(0.2 * bn2, bn2)
             relu2 = tf.layers.dropout(relu2, rate=0.5)
             # 8x8x128
             #         print(x2)
             x3 = tf.layers.conv2d(relu2, 256, 5, strides=2, padding='same',
-                                  kernel_initializer=tf.random_normal_initializer(stddev=0.02))
+                                  kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
             bn3 = tf.layers.batch_normalization(x3, training=True)
-            relu3 = tf.maximum(0.02 * bn3, bn3)
+            relu3 = tf.maximum(0.2 * bn3, bn3)
             relu3 = tf.layers.dropout(relu3, rate=0.5)
             # 4x4x256
             #         print(x3)
             # Flatten it
             flat = tf.reshape(relu3, (-1, 4 * 4 * 256))
 
-            conditioned_fully_connected_layer = tf.concat([flat, input_z], axis=0)
+            # conditioned_fully_connected_layer = tf.concat([flat], axis=-1)
 
-            logits = tf.layers.dense(conditioned_fully_connected_layer, 1)
+            logits = tf.layers.dense(flat, 1)
             #         print(logits)
             out = tf.sigmoid(logits)
             #         print('discriminator out: ', out)
 
             print_info("======>out: {}".format(out))
 
-            return out, logits
+            hook = LogShapeHook([images, input_z])
+
+            return out, logits, hook
 
     def generator(self, z, out_channel_dim, is_train=True):
         """
@@ -226,9 +247,9 @@ class ConditionalGAN(tf.estimator.Estimator):
         #     print('Generator for fake images...')
         g_model = self.generator(input_z, out_channel_dim)
         #     print('Passing discriminator with real images...')
-        d_model_real, d_logits_real = self.discriminator(input_real, input_z)
+        d_model_real, d_logits_real, hook1 = self.discriminator(input_real, input_z)
         #     print('Passing discriminator with fake images...')
-        d_model_fake, d_logits_fake = self.discriminator(g_model, input_z, reuse=True)
+        d_model_fake, d_logits_fake, hook2 = self.discriminator(g_model, input_z, reuse=True)
 
         d_loss_real = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=d_logits_real, labels=tf.ones_like(d_model_real)))
@@ -241,7 +262,7 @@ class ConditionalGAN(tf.estimator.Estimator):
 
         print_hooks = UserLogHook(g_model, d_loss, g_loss, global_step)
 
-        return d_loss, g_loss, print_hooks
+        return d_loss, g_loss, [print_hooks, hook1, hook2]
 
     def model_opt(self, d_loss, g_loss, learning_rate, beta1, global_step):
         """
@@ -308,7 +329,7 @@ class ConditionalGAN(tf.estimator.Estimator):
             tf.logging.info("=========> {}".format(x_placeholder))
 
             channel = x_placeholder.get_shape()[-1]
-            d_loss, g_loss, print_hooks = self.model_loss(x_placeholder, z_placeholder, channel, self.global_step)
+            d_loss, g_loss, hooks = self.model_loss(x_placeholder, z_placeholder, channel, self.global_step)
 
             d_train_opt, g_train_opt = self.model_opt(d_loss, g_loss,
                                                       self.gan_config.learning_rate,
@@ -329,7 +350,7 @@ class ConditionalGAN(tf.estimator.Estimator):
             tf.summary.scalar(name="d_loss", tensor=d_loss)
 
             training_hooks = self.get_sequential_train_hooks(d_train_opt, g_train_opt)
-            training_hooks.append(print_hooks)
+            training_hooks.extend(hooks)
 
         return tf.estimator.EstimatorSpec(
             mode=mode,
@@ -371,7 +392,8 @@ CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
 --image-folde=Images_bw_32x32 \
 --model-name=cgan \
 --batch-size=32 \
---num-epochs=100
+--num-epochs=100 \
+--is-live=False
 
 
 

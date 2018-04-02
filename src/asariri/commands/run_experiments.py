@@ -26,8 +26,8 @@ valid_bools = {'true': True,
 def run(opt):
     # sess = tf.InteractiveSession()
     dataset = DatasetFactory.get(opt.dataset_name)
-    dataset = dataset("../data/asariri/audio",
-                      "../data/asariri/" + opt.image_folder,
+    dataset = dataset("data/asariri/audio",
+                      "data/asariri/" + opt.image_folder,
                       is_live=valid_bools[opt.is_live])
 
     data_iterator = DataIteratorFactory.get(opt.data_iterator_name)
