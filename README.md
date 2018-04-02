@@ -109,7 +109,7 @@ env or to any existing environment
     - `data` folder and do following Right click -> Mark Directory As -> Excluded
     
     
-## Dataset
+## [Dataset](https://github.com/thak123/asariri)
 
 - CIFAR 10 50K 32x32 images + Noise
 - Crawled Dataset : Manually prepated for this repo with TED talks + (Noise + Audio MFCC)
@@ -124,6 +124,14 @@ env or to any existing environment
                 - person_x
                     - file_id.jpeg
 
+```
+
+In case submodules pull fails:
+
+```bash
+cd /path/to/asariri/
+cd  data
+git clone https://github.com/thak123/asariri
 ```
 
 

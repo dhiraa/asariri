@@ -177,9 +177,10 @@ class VanillaGAN(tf.estimator.Estimator):
 
         with tf.variable_scope('generator', reuse=not is_train):
             gen_filter_size = self.gan_config.gen_filter_size
-            
+
+            x = tf.layers.batch_normalization(z)
             # First fully connected layer
-            x = tf.layers.dense(z, 8 * 8 * gen_filter_size)
+            x = tf.layers.dense(x, 8 * 8 * gen_filter_size)
             # Reshape it to start the convolutional stack
             x = tf.reshape(x, (-1, 8, 8, gen_filter_size))
             x = tf.maximum(self.gan_config.alpha * x, x)

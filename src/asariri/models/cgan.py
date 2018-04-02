@@ -59,8 +59,9 @@ class LogShapeHook(session_run_hook.SessionRunHook):
 
     def before_run(self, run_context):
         for tensor in self._tensors:
-            print_error(tensor)
-            print_error(tensor.get_shape())
+            # print_error(tensor)
+            # print_error(tensor.get_shape())
+            pass
 
 class UserLogHook(session_run_hook.SessionRunHook):
     def __init__(self, z_image, d_loss, g_loss, global_Step):
@@ -156,6 +157,7 @@ class ConditionalGAN(tf.estimator.Estimator):
             # input_z = tf.layers.dense(input_z, self.gan_config.batch_size * 1 * 1* 740)
             # images = tf.layers.dense(images, self.gan_config.batch_size * 1 * 1 * 740)
 
+            input_z = tf.layers.batch_normalization(input_z)
             y = tf.reshape(input_z, [-1, 1, 1, 740], name="y_reshape")
 
             x1 = conv_cond_concat(images, y)
@@ -208,8 +210,9 @@ class ConditionalGAN(tf.estimator.Estimator):
         with tf.variable_scope('generator', reuse=not is_train):
             gen_filter_size = self.gan_config.gen_filter_size
 
+            x = tf.layers.batch_normalization(z)
             # First fully connected layer
-            x = tf.layers.dense(z, 8 * 8 * gen_filter_size)
+            x = tf.layers.dense(x, 8 * 8 * gen_filter_size)
             # Reshape it to start the convolutional stack
             x = tf.reshape(x, (-1, 8, 8, gen_filter_size))
             x = tf.maximum(self.gan_config.alpha * x, x)
