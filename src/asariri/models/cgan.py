@@ -148,10 +148,12 @@ class ConditionalGAN(tf.estimator.Estimator):
         """
 
         with tf.variable_scope('discriminator', reuse=reuse):
-            print_error(input_z.get_shape())
+            # input_z = tf.layers.dense(input_z, self.gan_config.batch_size * 1 * 1* 740)
+            # images = tf.layers.dense(images, self.gan_config.batch_size * 1 * 1 * 740)
 
-            y = tf.reshape(input_z, [self.gan_config.batch_size, 1, 1, 740])
-            images = tf.reshape(images, [self.gan_config.batch_size, 32, 32, 1])
+            y = tf.reshape(input_z, [self.gan_config.batch_size, 1, 1, 740], name="y_reshape")
+            images = tf.reshape(images, [self.gan_config.batch_size, 32, 32, 1], name="images_reshape")
+
             x1 = conv_cond_concat(images, y)
 
             # Input layer consider ?x32x32x3
@@ -314,19 +316,17 @@ class ConditionalGAN(tf.estimator.Estimator):
         self.global_step_inc = self.global_step.assign_add(0)
 
         z_placeholder = features[self._feature_type.AUDIO_OR_NOISE]  # Audio/Noise Placeholder to the discriminator
-        tf.logging.info("=========> {}".format(z_placeholder))
 
         z_placeholder = tf.cast(z_placeholder, tf.float32)
 
-        tf.logging.info("=========> {}".format(z_placeholder))
+        tf.logging.info("=========>z_placeholder {}".format(z_placeholder))
 
         if mode != ModeKeys.INFER:
 
             x_placeholder = features[self._feature_type.IMAGE]  # Placeholder for input image vectors to the generator
-            tf.logging.info("=========> {}".format(x_placeholder))
 
             x_placeholder = tf.cast(x_placeholder, tf.float32)
-            tf.logging.info("=========> {}".format(x_placeholder))
+            tf.logging.info("=========> x_placeholder {}".format(x_placeholder))
 
             channel = x_placeholder.get_shape()[-1]
             d_loss, g_loss, hooks = self.model_loss(x_placeholder, z_placeholder, channel, self.global_step)
@@ -362,27 +362,6 @@ class ConditionalGAN(tf.estimator.Estimator):
         )
 
 
-"""
-CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
---mode=train \
---dataset-name=mnist_dataset \
---data-iterator-name=mnist_iterator \
---model-name=cgan \
---image-folde=minist_bw_28x28 \
---batch-size=32 \
---num-epochs=2
-
-python src/asariri/commands/run_experiments.py \
---mode=predict \
---dataset-name=mnist_dataset \
---data-iterator-name=mnist_iterator \
---model-name=cgan \
---image-folde=minist_bw_28x28 \
---batch-size=32 \
---num-epochs=2 \
---model-dir=experiments/asariri/models/mnistdataiterator/cgan/  \
---is-live=False
-"""
 
 """
 CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
@@ -391,7 +370,7 @@ CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
 --data-iterator-name=crawled_data_iterator \
 --image-folde=Images_bw_32x32 \
 --model-name=cgan \
---batch-size=32 \
+--batch-size=8 \
 --num-epochs=100 \
 --is-live=False
 
@@ -403,7 +382,7 @@ CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
 --data-iterator-name=crawled_data_iterator \
 --model-name=cgan \
 --image-folde=Images_bw_32x32 \
---batch-size=32 \
+--batch-size=8 \
 --num-epochs=2 \
 --model-dir=experiments/asariri/models/crawleddataiterator/cgan/ \
 --is-live=False
