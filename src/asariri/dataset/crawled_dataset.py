@@ -98,7 +98,7 @@ class CrawledData(IDataset):
         else:
             shuffle(self._val_files)
             for file in self._val_files[:10]:
-                print_info("Pred_file:"+ file + "\n")
+                print_info("Pred_file:"+ file["label"] + "\n")
 
             return self._val_files[:10]
 
