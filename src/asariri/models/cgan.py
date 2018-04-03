@@ -151,42 +151,54 @@ class ConditionalGAN(tf.estimator.Estimator):
 
 
         hook = LogShapeHook([images, input_z])
+        _,width,height,channel = images.get_shape().as_list()
 
+        print_error("{}".format([width,height,channel]))
 
         with tf.variable_scope('discriminator', reuse=reuse):
-            # input_z = tf.layers.dense(input_z, self.gan_config.batch_size * 1 * 1* 740)
-            # images = tf.layers.dense(images, self.gan_config.batch_size * 1 * 1 * 740)
 
+            # y = tf.reshape(input_z, [-1, 1, 1, 740], name="y_reshape") #2*2*185=>740
             input_z = tf.layers.batch_normalization(input_z)
-            y = tf.reshape(input_z, [-1, 1, 1, 740], name="y_reshape")
+            input_z = tf.layers.dense(input_z, width*height*channel)
+            y = tf.reshape(input_z, [-1, width,height,channel], name="y_reshape")
+            print_error(y)
 
             x1 = conv_cond_concat(images, y)
+
+            print_error(x1)
 
             # Input layer consider ?x32x32x3
             x1 = tf.layers.conv2d(x1, 64, 5, strides=2, padding='same',
                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
             relu1 = tf.maximum(0.02 * x1, x1)
-            relu1 = tf.layers.dropout(relu1, rate=0.5)
+            # relu1 = tf.layers.dropout(relu1, rate=0.5)
             # 16x16x64
             #         print(x1)
             x2 = tf.layers.conv2d(relu1, 128, 5, strides=2, padding='same',
                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
             bn2 = tf.layers.batch_normalization(x2, training=True)
             relu2 = tf.maximum(0.02 * bn2, bn2)
-            relu2 = tf.layers.dropout(relu2, rate=0.5)
+            # relu2 = tf.layers.dropout(relu2, rate=0.5)
             # 8x8x128
             #         print(x2)
             x3 = tf.layers.conv2d(relu2, 256, 5, strides=2, padding='same',
                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
             bn3 = tf.layers.batch_normalization(x3, training=True)
             relu3 = tf.maximum(0.02 * bn3, bn3)
-            relu3 = tf.layers.dropout(relu3, rate=0.5)
+            # relu3 = tf.layers.dropout(relu3, rate=0.5)
             # 4x4x256
             #         print(x3)
             # Flatten it
             flat = tf.reshape(relu3, (-1, 4 * 4 * 256))
 
             # conditioned_fully_connected_layer = tf.concat([flat], axis=-1)
+            #
+            # flat = tf.layers.dense(flat, 512)
+            # flat = tf.layers.dense(flat, 1024)
+            # flat = tf.layers.dense(flat, 512)
+            # flat = tf.layers.dense(flat, 256)
+            # flat = tf.layers.dense(flat, 128)
+
 
             logits = tf.layers.dense(flat, 1)
             #         print(logits)
@@ -210,9 +222,9 @@ class ConditionalGAN(tf.estimator.Estimator):
         with tf.variable_scope('generator', reuse=not is_train):
             gen_filter_size = self.gan_config.gen_filter_size
 
-            x = tf.layers.batch_normalization(z)
+            # x = tf.layers.batch_normalization(z)
             # First fully connected layer
-            x = tf.layers.dense(x, 8 * 8 * gen_filter_size)
+            x = tf.layers.dense(z, 8 * 8 * gen_filter_size)
             # Reshape it to start the convolutional stack
             x = tf.reshape(x, (-1, 8, 8, gen_filter_size))
             x = tf.maximum(self.gan_config.alpha * x, x)
