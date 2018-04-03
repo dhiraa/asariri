@@ -24,7 +24,7 @@ class ConditionalGANConfig(ModelConfigBase):
 
         self.batch_size = batch_size
 
-        self.gen_filter_size = 512
+        self.gen_filter_size = 1024
         self.learning_rate = 0.001
         self.alpha = 0.15
         self.beta1 = 0.4
@@ -75,7 +75,7 @@ class UserLogHook(session_run_hook.SessionRunHook):
 
         print_info("global_step {}".format(global_step))
 
-        if global_step % 2 == 0 or global_step % 3 == 0:
+        if global_step % 5 == 0:
             samples = run_context.session.run(self._z_image)
             channel = self._z_image.get_shape()[-1]
             if channel == 1:
@@ -165,21 +165,21 @@ class ConditionalGAN(tf.estimator.Estimator):
             # Input layer consider ?x32x32x3
             x1 = tf.layers.conv2d(x1, 64, 5, strides=2, padding='same',
                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
-            relu1 = tf.maximum(0.2 * x1, x1)
+            relu1 = tf.maximum(0.02 * x1, x1)
             relu1 = tf.layers.dropout(relu1, rate=0.5)
             # 16x16x64
             #         print(x1)
             x2 = tf.layers.conv2d(relu1, 128, 5, strides=2, padding='same',
                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
             bn2 = tf.layers.batch_normalization(x2, training=True)
-            relu2 = tf.maximum(0.2 * bn2, bn2)
+            relu2 = tf.maximum(0.02 * bn2, bn2)
             relu2 = tf.layers.dropout(relu2, rate=0.5)
             # 8x8x128
             #         print(x2)
             x3 = tf.layers.conv2d(relu2, 256, 5, strides=2, padding='same',
                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
             bn3 = tf.layers.batch_normalization(x3, training=True)
-            relu3 = tf.maximum(0.2 * bn3, bn3)
+            relu3 = tf.maximum(0.02 * bn3, bn3)
             relu3 = tf.layers.dropout(relu3, rate=0.5)
             # 4x4x256
             #         print(x3)
