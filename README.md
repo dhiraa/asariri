@@ -2,7 +2,7 @@
 ![](asariri.png)
 
 ## About 
-[Check the presentation here!](Asariri.pptx.pdf)
+[Check the presentation here!](docs/Asariri.pptx.pdf)
 
 Build a deep learning model that captures the voice fingerprint along with the user auxiliary 
 features like face and use that to synthesis auxiliary face features given a voice recording or 
