@@ -26,7 +26,12 @@ valid_bools = {'true': True,
 def run(opt):
     # sess = tf.InteractiveSession()
     dataset = DatasetFactory.get(opt.dataset_name)
-    dataset = dataset("data/asariri/audio",
+    if opt.mode == "predict":
+        dataset = dataset("data/asariri/audio_back",
+                          "data/asariri/" + opt.image_folder,
+                          is_live=valid_bools[opt.is_live])
+    else:
+        dataset = dataset("data/asariri/audio",
                       "data/asariri/" + opt.image_folder,
                       is_live=valid_bools[opt.is_live])
 
@@ -119,7 +124,9 @@ if __name__ == "__main__":
                                    "Images_c_64x64",
                                    "Images_c_32x32",
                                    "Images_c_28x28",
-                                   "cifar10_c_32x32"],
+                                   "cifar10_c_32x32",
+                                   "Images_bw_back_32x32"
+                                   ],
                           required=True,
                           help="Select image folder for training."
                           )

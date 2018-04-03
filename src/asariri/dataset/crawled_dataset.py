@@ -30,7 +30,7 @@ class CrawledData(IDataset):
         self.set_name("CrawledData")
 
     def is_audio_file(self, path):
-        return path.split("/")[-3] == "audio"
+        return path.split("/")[-3] in ["audio","audio_back"]
 
     def is_image_file(self, path):
         return path.split("/")[-3] == self._images_dir.split("/")[-1]
@@ -97,6 +97,9 @@ class CrawledData(IDataset):
             return self._test_files
         else:
             shuffle(self._val_files)
+            for file in self._val_files[:10]:
+                print_info("Pred_file:"+ file + "\n")
+
             return self._val_files[:10]
 
 
