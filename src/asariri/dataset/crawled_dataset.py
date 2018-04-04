@@ -85,8 +85,10 @@ class CrawledData(IDataset):
         self._train_files, self._val_files, _, _ = train_test_split(all_files, all_files, test_size=0.1, random_state=42)
 
     def get_test_files(self):
+        self._test_files = []
+
         if self.is_live:
-            test_dir = "/tmp/test_asariri/"
+            test_dir = "/tmp/asariri_test/"
             record_audio(test_dir)
 
             for each in os.listdir(test_dir):
@@ -105,18 +107,22 @@ class CrawledData(IDataset):
 
     def predict_on_test_files(self, data_iterator, estimator):
 
-        predictions_fn = estimator.predict(input_fn=data_iterator.get_test_input_function(),
-                                           hooks=[])
+        while True:
+            predictions_fn = estimator.predict(input_fn=data_iterator.get_test_input_function(),
+                                               hooks=[])
 
-        predictions = []
+            predictions = []
 
-        for r in tqdm(predictions_fn, desc = "predictions: "):
-            images = r
-            predictions.append(images)
-            my_i = images.squeeze()
-            plt.imshow(my_i, cmap="gray_r")
-            plt.pause(1)
+            for r in tqdm(predictions_fn, desc = "predictions: "):
+                images = r
+                predictions.append(images)
+                my_i = images.squeeze()
+                plt.imshow(my_i, cmap="gray_r")
+                plt.pause(1)
 
-        input("press enter to exit!")
+            if not self.is_live:
+                break
+
+            input("press enter to exit!")
 
 

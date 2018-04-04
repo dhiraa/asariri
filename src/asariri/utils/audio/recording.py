@@ -19,17 +19,21 @@ def record_audio(out_file_path,
 
     os.makedirs(out_file_path)
 
+    print("recording...")
+    input("Press Enter...")
+
+
     audio = pyaudio.PyAudio()
     # start Recording
     stream = audio.open(format=format, channels=channels,
                         rate=rate, input=True,
                         frames_per_buffer=chunk)
-    print("recording...")
     frames = []
 
     for i in tqdm(range(0, int(rate / chunk * record_seconds)), desc="recording:"):
         data = stream.read(chunk)
         frames.append(data)
+
     print("finished recording")
 
     # stop Recording
