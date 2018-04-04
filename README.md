@@ -10,6 +10,16 @@ Build a deep learning model that captures the voice fingerprint along with the u
 features like face and use that to synthesis auxiliary face features given a voice recording or 
 new machine voice given a picture.
 
+### It’s an interesting problem
+- If improved further we can learn a lot of characteristics about the person from the raw voice sample. (mental state. Stress level.. Personality traits etc)
+- Bored of creating emojis/avatars? Lets try creating one from our voice from exisiting database of faces
+- It is an interesting problem to solve as visualising the face from the voice may create a separate paradigm for research in Data Science.
+- If solved it could be used in crime solving..etc
+
+### It’s an unsolved problem
+- We haven’t found any statistical approach for solving this problem till now.
+- We have come across various studies conducted via using humans as the annotators.
+
 
 ## Introduction
 A simple and modular Tensorflow model development environment to handle variety of models.
