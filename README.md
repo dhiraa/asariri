@@ -225,6 +225,6 @@ convert -delay 15 -loop 0 *.png ../asariri.gif
 - http://www.vogella.com/tutorials/GitSubmodules/article.html
 
 # Team
-- Gaurish Thakkar<thak123@gmail.com>
-- Anil Kumar <>
-- Mageswaran Dhandapani <mageswaran1989@gmail.com/mageswaran.dhandapani@imaginea.com>
+- Gaurish Thakkar <thak123@gmail.com> <gaurish.thakkar@imaginea.com>
+- Anil Kumar <anil_kumar469@yahoo.com> <anilkumar.reddy@imaginea.com>
+- Mageswaran Dhandapani <mageswaran1989@gmail.com> <mageswaran.dhandapani@imaginea.com>
