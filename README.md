@@ -215,7 +215,7 @@ python src/asariri/commands/run_experiments.py \
 ```bash
 sudo apt-get install imagemagick
 cd experiments/asariri/data/vanilla_gan
-convert -delay 5 -loop 0 *.png ../asariri.gif
+convert -delay 15 -loop 0 *.png ../asariri.gif
 ```
 
 # References:
