@@ -1,6 +1,8 @@
 
 ![](asariri.png)
 
+![](asariri.gif)
+
 ## About 
 [Check the presentation here!](docs/Asariri.pptx.pdf)
 
@@ -209,7 +211,12 @@ python src/asariri/commands/run_experiments.py \
     Eg: folder name with `_bw_` is considered to be gray scale image 
 - Which is then passed to model through data iterator, this info is then used in Generator and Discriminator
 - Audio File ---> Librosa ---> MFCC ---> 3920 freq samples
-
+- To make GIFs from training data
+```bash
+sudo apt-get install imagemagick
+cd experiments/asariri/data/vanilla_gan
+convert -delay 5 -loop 0 *.png ../asariri.gif
+```
 
 # References:
 - https://github.com/adeshpande3/Generative-Adversarial-Networks/blob/master/Generative%20Adversarial%20Networks%20Tutorial.ipynb
