@@ -234,6 +234,12 @@ convert -delay 15 -loop 0 *.png ../asariri.gif
 - https://www.tensorflow.org/api_docs/python/tf/contrib/gan/estimator/GANEstimator
 - http://www.vogella.com/tutorials/GitSubmodules/article.html
 
+# Other Git Repos
+- https://github.com/pavitrakumar78/Anime-Face-GAN-Keras
+- https://github.com/KupynOrest/DeblurGAN
+- https://github.com/hiepph/cgan-face-generator
+- https://github.com/robbiebarrat/art-DCGAN
+
 # Team
 - Gaurish Thakkar <thak123@gmail.com> <gaurish.thakkar@imaginea.com>
 - Anil Kumar <anil_kumar469@yahoo.com> <anilkumar.reddy@imaginea.com>
