@@ -158,38 +158,51 @@ class ConditionalGAN(tf.estimator.Estimator):
         with tf.variable_scope('discriminator', reuse=reuse):
 
             # y = tf.reshape(input_z, [-1, 1, 1, 740], name="y_reshape") #2*2*185=>740
-            input_z = tf.layers.batch_normalization(input_z)
-            input_z = tf.layers.dense(input_z, width*height*channel)
-            y = tf.reshape(input_z, [-1, width,height,channel], name="y_reshape")
-            print_error(y)
+            # input_z = tf.layers.batch_normalization(input_z)
+            # input_z = tf.layers.dense(input_z, width*height*channel)
+            # y = tf.reshape(input_z, [-1, width,height,channel], name="y_reshape")
+            # print_error(y)
 
-            x1 = conv_cond_concat(images, y)
 
-            print_error(x1)
+            # x1 = conv_cond_concat(y,images)
+            '''
+            # c_code = tf.expand_dims(tf.expand_dims(input_z, 1), 1)
+            # c_code = tf.tile(c_code, [1, 1, 1, 740])
+            # x1 = tf.concat([images, c_code], 3)
+            # print_error(x1)
+            '''
+            # x1 = tf.layers.batch_normalization(images)
 
             # Input layer consider ?x32x32x3
-            x1 = tf.layers.conv2d(x1, 64, 5, strides=2, padding='same',
+            x1 = tf.layers.conv2d(images, 64, 5, strides=2, padding='same',
                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
-            relu1 = tf.maximum(0.02 * x1, x1)
+            x1= tf.maximum(self.gan_config.alpha * x1, x1)
+
+            x1 = tf.layers.batch_normalization(x1, training=True)
             # relu1 = tf.layers.dropout(relu1, rate=0.5)
             # 16x16x64
             #         print(x1)
-            x2 = tf.layers.conv2d(relu1, 128, 5, strides=2, padding='same',
+            x2 = tf.layers.conv2d(x1, 128, 5, strides=2, padding='same',
                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
-            bn2 = tf.layers.batch_normalization(x2, training=True)
-            relu2 = tf.maximum(0.02 * bn2, bn2)
+            x2 = tf.maximum(self.gan_config.alpha * x2, x2)
+
+
+            x2 = tf.layers.batch_normalization(x2, training=True)
             # relu2 = tf.layers.dropout(relu2, rate=0.5)
             # 8x8x128
             #         print(x2)
-            x3 = tf.layers.conv2d(relu2, 256, 5, strides=2, padding='same',
+            x3 = tf.layers.conv2d(x2, 256, 5, strides=2, padding='same',
                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.02))
-            bn3 = tf.layers.batch_normalization(x3, training=True)
-            relu3 = tf.maximum(0.02 * bn3, bn3)
+            x3 = tf.maximum(self.gan_config.alpha * x3, x3)
+
+            x3 = tf.layers.batch_normalization(x3, training=True)
             # relu3 = tf.layers.dropout(relu3, rate=0.5)
             # 4x4x256
             #         print(x3)
             # Flatten it
-            flat = tf.reshape(relu3, (-1, 4 * 4 * 256))
+            flat = tf.reshape(x3, (-1, 4 * 4 * 256))
+
+            flat = tf.concat([flat,input_z], -1)
 
             # conditioned_fully_connected_layer = tf.concat([flat], axis=-1)
             #
@@ -200,7 +213,10 @@ class ConditionalGAN(tf.estimator.Estimator):
             # flat = tf.layers.dense(flat, 128)
 
 
-            logits = tf.layers.dense(flat, 1)
+            logits = tf.layers.dense(flat, 512)
+            logits = tf.maximum(self.gan_config.alpha * logits, logits)
+            logits = tf.layers.dense(logits, 1)
+
             #         print(logits)
             out = tf.sigmoid(logits)
             #         print('discriminator out: ', out)
@@ -219,7 +235,7 @@ class ConditionalGAN(tf.estimator.Estimator):
         :return: The tensor output of the generator
         """
 
-        with tf.variable_scope('generator', reuse=not is_train):
+        with tf.variable_scope('generator', reuse=False ):
             gen_filter_size = self.gan_config.gen_filter_size
 
             # x = tf.layers.batch_normalization(z)
@@ -227,11 +243,13 @@ class ConditionalGAN(tf.estimator.Estimator):
             x = tf.layers.dense(z, 8 * 8 * gen_filter_size)
             # Reshape it to start the convolutional stack
             x = tf.reshape(x, (-1, 8, 8, gen_filter_size))
+            # x = tf.layers.batch_normalization(x, training=is_train)
             x = tf.maximum(self.gan_config.alpha * x, x)
 
             x = tf.layers.conv2d_transpose(x, gen_filter_size // 2, 5, strides=1, padding='same')
-            x = tf.layers.batch_normalization(x, training=is_train)
             x = tf.maximum(self.gan_config.alpha * x, x)
+
+            x = tf.layers.batch_normalization(x, training=is_train)
 
             gen_filter_size = gen_filter_size // 4
             # 32 //  8 = srt(4)  => 2 => (8) -> 16 -> 32
@@ -242,8 +260,8 @@ class ConditionalGAN(tf.estimator.Estimator):
             for i in range(int(math.sqrt(self.gan_config.image_size // 8))):
                 gen_filter_size = gen_filter_size // 2
                 x = tf.layers.conv2d_transpose(x, gen_filter_size, 5, strides=2, padding='same')
-                x = tf.layers.batch_normalization(x, training=is_train)
                 x = tf.maximum(self.gan_config.alpha * x, x)
+                x = tf.layers.batch_normalization(x, training=is_train)
 
                 print_info("======>x at conv layer {} is {}".format(i, x))
 
@@ -255,8 +273,11 @@ class ConditionalGAN(tf.estimator.Estimator):
             print_info("======>out: {}".format(out))
 
             hook = LogShapeHook([out])
+            if is_train:
+                return out, hook
+            else:
+                return out
 
-            return out, hook
 
     def model_loss(self, input_real, input_z, out_channel_dim, global_step):
         """
@@ -356,7 +377,7 @@ class ConditionalGAN(tf.estimator.Estimator):
                                                       self.gan_config.beta1,
                                                       self.global_step)
         else:
-            sample_image = self.generator(z_placeholder, self.gan_config.num_image_channels)
+            sample_image = self.generator(z_placeholder, self.gan_config.num_image_channels,is_train=False)
             # changes are made to take image channels from data iterator just for prediction
 
         # Loss, training and eval operations are not needed during inference.

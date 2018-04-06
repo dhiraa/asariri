@@ -175,7 +175,7 @@ class VanillaGAN(tf.estimator.Estimator):
         :return: The tensor output of the generator
         """
 
-        with tf.variable_scope('generator', reuse=not is_train):
+        with tf.variable_scope('generator', reuse=False):
             gen_filter_size = self.gan_config.gen_filter_size
 
             x = tf.layers.batch_normalization(z)
@@ -312,7 +312,7 @@ class VanillaGAN(tf.estimator.Estimator):
                                                       self.gan_config.beta1,
                                                       self.global_step)
         else:
-            sample_image = self.generator(z_placeholder, self.gan_config.num_image_channels)
+            sample_image = self.generator(z_placeholder, self.gan_config.num_image_channels,is_train=False)
             #changes are made to take image channels from data iterator just for prediction
 
 

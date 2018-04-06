@@ -216,6 +216,36 @@ python src/asariri/commands/run_experiments.py \
 
 ```
 
+# Running Different Models
+- In order to try a different model architecture, run the following commands
+- Here we will replace the model-name parameter with the name of the model
+- For training 
+```
+CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
+--mode=train \
+--dataset-name=crawled_dataset \
+--data-iterator-name=crawled_data_iterator \
+--image-folde=Images_bw_32x32 \
+--model-name=cgan \
+--batch-size=8 \
+--num-epochs=100 \
+--is-live=False
+
+```
+- For prediction
+```
+CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
+--mode=predict \
+--dataset-name=crawled_dataset \
+--data-iterator-name=crawled_data_iterator \
+--model-name=cgan \
+--image-folde=Images_bw_32x32 \
+--batch-size=8 \
+--num-epochs=2 \
+--model-dir=experiments/asariri/models/crawleddataiterator/cgan/ \
+--is-live=False
+```
+
 # Misc Details to remember
 - Based on the image folder name, the number of color channels are determined in the dataset class. 
     Eg: folder name with `_bw_` is considered to be gray scale image 
