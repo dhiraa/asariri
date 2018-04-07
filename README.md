@@ -22,7 +22,7 @@ new machine voice given a picture.
 
 
 ## Introduction
-A simple and modular Tensorflow model development environment to handle variety of models.
+- A simple and modular Tensorflow model development environment to handle variety of models.
 
 Developing models to solve a problem for a data set at hand, requires lot of trial and error methods.
 Which includes and not limited to:
@@ -56,6 +56,7 @@ In short we couldn't find any easy to experiment Tensorflow framework to play wi
 **We are happy to include if we find any such frameworks here in the future!**
 
 ## Problem Statement
+ - Capture the relationship between voices(sound) and facial features (image) with a Deep Learning model
  - To come up with an software architecture to try different models on
  different data set
  - Which should take care of:
