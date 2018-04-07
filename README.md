@@ -216,7 +216,8 @@ python src/asariri/commands/run_experiments.py \
 
 ```
 
-# Running Different Models
+**Running Different Models**
+- We show how easy it is to switch the dataset and model
 - In order to try a different model architecture, run the following commands
 - Here we will replace the model-name parameter with the name of the model
 - For training 
@@ -269,6 +270,15 @@ convert -delay 15 -loop 0 *.png ../asariri.gif
 - https://github.com/KupynOrest/DeblurGAN
 - https://github.com/hiepph/cgan-face-generator
 - https://github.com/robbiebarrat/art-DCGAN
+
+# GAN References
+- https://www.slideshare.net/ThomasDaSilvaPaula/a-very-gentle-introduction-to-generative-adversarial-networks-aka-gans-71614428
+- https://medium.com/ai-society/gans-from-scratch-1-a-deep-introduction-with-code-in-pytorch-and-tensorflow-cb03cdcdba0f
+- https://www.oreilly.com/ideas/deep-convolutional-generative-adversarial-networks-with-tensorflow
+- 
+
+# GAN Applications 
+- https://github.com/nashory/gans-awesome-applications#photorealistic-image-generation-eg-pix2pix-sketch2image
 
 # Team
 - Gaurish Thakkar <thak123@gmail.com> <gaurish.thakkar@imaginea.com>
