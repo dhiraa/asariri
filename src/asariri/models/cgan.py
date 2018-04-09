@@ -1,6 +1,7 @@
 """
 Reference: 
-    - https://github.com/Mageswaran1989/deep-learning/blob/project_5/face_generation/
+    -     - https://github.com/hwalsuklee/tensorflow-generative-model-collections/blob/master/CGAN.py
+
 """
 
 from asariri.dataset.features.asariri_features import GANFeature

@@ -220,7 +220,33 @@ python src/asariri/commands/run_experiments.py \
 - We show how easy it is to switch the dataset and model
 - In order to try a different model architecture, run the following commands
 - Here we will replace the model-name parameter with the name of the model
-- For training 
+
+**VANILLA GAN**
+```
+CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
+--mode=train \
+--dataset-name=crawled_dataset \
+--data-iterator-name=crawled_data_iterator \
+--model-name=vanilla_gan \
+--image-folde=Images_bw_32x32 \
+--batch-size=8 \
+--num-epochs=2
+        
+#Running below command will generate 10 samples in a Matplot UI
+python src/asariri/commands/run_experiments.py \
+--mode=predict \
+--dataset-name=crawled_dataset \
+--data-iterator-name=crawled_data_iterator \
+--model-name=vanilla_gan \
+--image-folde=Images_bw_back_32x32 \
+--batch-size=8 \
+--num-epochs=2 \
+--model-dir=experiments/asariri/models/crawleddataiterator/vanilla_gan/  \
+--is-live=False
+```
+
+**CGAN**
+
 ```
 CUDA_VISIBLE_DEVICES=0 python src/asariri/commands/run_experiments.py \
 --mode=train \
