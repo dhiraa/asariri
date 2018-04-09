@@ -9,9 +9,10 @@ from random import shuffle
 from asariri.dataset.dataset_interface import IDataset
 from asariri.helpers.print_helper import *
 from asariri.helpers.downloaders import *
-
+from skimage.io import imsave
 from asariri.utils.audio.recording import record_audio
-
+from asariri.utils.images.image import *
+import cv2
 
 class CrawledData(IDataset):
     def __init__(self,
@@ -88,7 +89,7 @@ class CrawledData(IDataset):
         self._test_files = []
 
         if self.is_live:
-            test_dir = "/tmp/asariri_test/"
+            test_dir = "/tmp/asariri/audio/"
             record_audio(test_dir)
 
             for each in os.listdir(test_dir):
@@ -99,30 +100,45 @@ class CrawledData(IDataset):
             return self._test_files
         else:
             shuffle(self._val_files)
-            for file in self._val_files[:10]:
+            for file in self._val_files[:25]:
                 print_info("Pred_file:"+ file["label"] + "\n")
-
-            return self._val_files[:10]
+            self.test_files = self._val_files[:25]
+            return self.test_files
 
 
     def predict_on_test_files(self, data_iterator, estimator):
+        if not os.path.exists("/tmp/asariri/image/"):
+            os.makedirs("/tmp/asariri/image/")
 
+        # Get the color map by name:
+        cm = plt.get_cmap('brg')
         while True:
             predictions_fn = estimator.predict(input_fn=data_iterator.get_test_input_function(),
                                                hooks=[])
 
             predictions = []
 
+            i = 0
             for r in tqdm(predictions_fn, desc = "predictions: "):
                 images = r
                 predictions.append(images)
                 my_i = images.squeeze()
-                plt.imshow(my_i, cmap="gray_r")
+                my_i = np.stack((my_i,) * 3, -1)
+                my_i = images_square_grid(np.expand_dims(my_i, axis=0), "RGB")
+                plt.imshow(my_i)
                 plt.pause(1)
+                # imsave("/tmp/asariri/image/"+str(i)+".jpeg", my_i)
+                if not self.is_live:
+                    my_i.save("/tmp/asariri/image/"+self.test_files[i]["label"]+str(i)+".jpeg")
+                else:
+                    my_i.save("/tmp/asariri/image/test_live_" + str(i) + ".jpeg")
+                i = i+1
 
             if not self.is_live:
                 break
 
-            input("press enter to exit!")
+            user_input = input("type exit to end: ")
 
+            if user_input == "exit":
+                break
 

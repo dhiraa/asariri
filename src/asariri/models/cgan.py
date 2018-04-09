@@ -84,8 +84,8 @@ class UserLogHook(session_run_hook.SessionRunHook):
             else:
                 images_grid = images_square_grid(samples, "RGB")
 
-            if not os.path.exists(EXPERIMENT_DATA_ROOT_DIR + '/cgan/'): os.makedirs(
-                EXPERIMENT_DATA_ROOT_DIR + '/cgan/')
+            if not os.path.exists(EXPERIMENT_DATA_ROOT_DIR + '/cgan/'):
+                os.makedirs(EXPERIMENT_DATA_ROOT_DIR + '/cgan/')
 
             images_grid.save(EXPERIMENT_DATA_ROOT_DIR + '/cgan/' + '/asariri_{}.png'.format(global_step))
 
